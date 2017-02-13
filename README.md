@@ -35,8 +35,74 @@ Latest .NET Core.
 
 ### Examples
 
-```csharp
+Basic examples.
 
+```csharp
+var collection = DocumentDbInstance
+    .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
+    .Database("MyDb")
+    .Collection("MyTodos");
+
+var doc = NewTodo();
+
+// Create a document.
+var docId = collection.Document().Create(doc).Id;
+
+// Get a document.
+var todo = collection.Document(docId).Read();
+
+// Edit document.
+collection.Document(docId).Edit(o => o.Text = text);
+
+// Delete document.
+collection.Document(docId).Delete();
+```
+
+Synchronous and asynchronous options.
+
+```csharp
+var collection = DocumentDbInstance
+    .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
+    .Database("MyDb")
+    .Collection("MyTodos");
+
+// Single add.
+
+var doc = NewTodo();
+
+collection.Add(doc);
+await collection.AddAsync(doc);
+collection.Document().Create(doc);
+await collection.Document().CreateAsync(doc);
+
+// Range add.
+
+var docs = NewTodos();
+
+collection.Add(docs);
+await collection.AddAsync(docs);
+collection.Document().Create(docs);
+await collection.Document().CreateAsync(docs);
+```
+
+Queries.
+
+```csharp
+var collection = DocumentDbInstance
+    .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
+    .Database("MyDb")
+    .Collection("MyTodos");
+
+// Query documents.
+var urgentTodos = collection.Query.Where(t => t.IsUrgent).ToList();
+
+// See changes.
+var current = await collection.GetChangesAsync();
+
+collection.Document().Create(NewTodo());
+collection.Document().Create(NewTodo());
+
+var addedSinceCurrent = await collection.GetChangesAsync();
 ```
 
 ## License
