@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "DocumentDb.Fluent", "Core\DocumentDb.Fluent.csproj", "{DF2F9435-DC23-4534-9492-10C3DE722333}"
+Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "DocumentDb.Fluent", "src\Core\DocumentDb.Fluent.csproj", "{DF2F9435-DC23-4534-9492-10C3DE722333}"
 EndProject
-Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "DocumentDb.Fluent.Tests", "Tests\DocumentDb.Fluent.Tests.csproj", "{B9FB4A98-EC93-4AE3-96CC-1A83F6B176B4}"
+Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "DocumentDb.Fluent.Tests", "src\Tests\DocumentDb.Fluent.Tests.csproj", "{B9FB4A98-EC93-4AE3-96CC-1A83F6B176B4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
