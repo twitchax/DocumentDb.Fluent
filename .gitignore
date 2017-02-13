@@ -6,6 +6,8 @@
 .vs/
 .vscode/
 
+*.json
+
 # Build results
 
 [Dd]ebug/
