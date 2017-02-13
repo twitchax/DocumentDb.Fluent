@@ -6,7 +6,7 @@
 .vs/
 .vscode/
 
-*.json
+appsettings.json
 
 # Build results
 

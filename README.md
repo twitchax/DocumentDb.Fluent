@@ -12,6 +12,17 @@ dotnet add package DoumentDb.Fluent
 
 ### Testing
 
+Create an `appsettings.json` in `src/Tests` which defines your information.
+
+```json
+{
+  "EndpointUri": "<endpoint>",
+  "PrimaryKey": "<key>"
+}
+```
+
+Then run tests.
+
 ```bash
 dotnet restore
 dotnet build
