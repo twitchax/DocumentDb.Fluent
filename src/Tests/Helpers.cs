@@ -18,6 +18,12 @@ namespace DocumentDb.Fluent.Tests
 
             Configuration = builder.Build();
         }
+
+        public static IDocumentDbInstance GetInstance()
+        {
+            return DocumentDbInstance
+                .Connect(Configuration["EndpointUri"], Configuration["PrimaryKey"]);
+        }
     }
 
     public class TestObject : HasId
@@ -25,5 +31,12 @@ namespace DocumentDb.Fluent.Tests
         public string Text { get; set; }
         public int Int { get; set; }
         public double Double { get; set; }
+    }
+
+    public class TestObject2 : HasId
+    {
+        public string Text2 { get; set; }
+        public int Int2 { get; set; }
+        public double Double2 { get; set; }
     }
 }

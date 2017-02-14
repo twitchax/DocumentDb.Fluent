@@ -12,7 +12,7 @@ namespace DocumentDb.Fluent
     /// </summary>
     /// <typeparam name="TSelfWrapper">The wrapping type (e.g., <see cref="IDatabase"/>).</typeparam>
     /// <typeparam name="TUnderlying">The underlying type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
-    public interface ICreateable<TSelfWrapper, TUnderlying>
+    public interface ICreateable<TSelfWrapper, in TUnderlying>
     {
         /// <summary>
         /// Creates a new entity.
@@ -48,7 +48,7 @@ namespace DocumentDb.Fluent
     /// </summary>
     /// <typeparam name="TSelfWrapper">The wrapped item type (e.g., <see cref="IDatabase"/>).</typeparam>
     /// <typeparam name="TItemUnderlying">The underlying item type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
-    public interface IAddable<TSelfWrapper, TItemUnderlying>
+    public interface IAddable<TSelfWrapper, in TItemUnderlying>
     {
         /// <summary>
         /// Adds an entity to this collection type.
@@ -103,7 +103,7 @@ namespace DocumentDb.Fluent
     /// </summary>
     /// <typeparam name="TSelfWrapper">The wrapping type (e.g., <see cref="IDatabase"/>).</typeparam>
     /// <typeparam name="TUnderlying">The underlying type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
-    public interface IUpdateable<TSelfWrapper, TUnderlying>
+    public interface IUpdateable<TSelfWrapper, in TUnderlying>
     {
         /// <summary>
         /// Updates this existing entity.
@@ -153,9 +153,37 @@ namespace DocumentDb.Fluent
     }
 
     /// <summary>
+    /// Provides a mechanism for querying an entity for its children.
+    /// </summary>
+    /// <typeparam name="TItemUnderlying">The underlying item type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
+    public interface IQueryableEntity<out TItemUnderlying>
+    {
+        /// <summary>
+        /// Gets the queryable collection of items (e.g., <see cref="IDocument{TUnderlying}"/>).
+        /// </summary>
+        IOrderedQueryable<TItemUnderlying> Query { get; }
+    }
+
+    /// <summary>
+    /// Provides a mechanism for querying an entity for its wrapped children.
+    /// </summary>
+    /// <typeparam name="TWrapper">The item type (e.g., <see cref="Database"/>).</typeparam>
+    public interface IQueryableWrappedEntity<out TWrapper>
+    {
+        /// <summary>
+        /// Gets the queryable collection of wrapped items (e.g., <see cref="IDocument{TUnderlying}"/>).
+        /// </summary>
+        IEnumerable<TWrapper> WrappedQuery { get; }
+    }
+
+    /// <summary>
     /// Provides a representation of a top-level DocumentDB instance ((loosely wraps <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/>)).
     /// </summary>
-    public interface IDocumentDbInstance
+    public interface IDocumentDbInstance :
+        IAddable<IDocumentDbInstance, Microsoft.Azure.Documents.Database>,
+        IClearable<IDocumentDbInstance>, 
+        IQueryableEntity<Microsoft.Azure.Documents.Database>,
+        IQueryableWrappedEntity<IDatabase>
     {
         /// <summary>
         /// The underlying <see cref="DocumentClient"/>.
@@ -163,7 +191,7 @@ namespace DocumentDb.Fluent
         DocumentClient Client { get; }
 
         /// <summary>
-        /// Gets (creates, if needed) a <see cref="Microsoft.Azure.Documents.Database"/>.
+        /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.Database"/>.
         /// </summary>
         /// <param name="dbId">The Id of the <see cref="Microsoft.Azure.Documents.Database"/>.</param>
         /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.Database"/>.</returns>
@@ -216,8 +244,12 @@ namespace DocumentDb.Fluent
     /// </summary>
     public interface IDatabase :
         IEntity<IDatabase>,
+        IAddable<IDatabase, Microsoft.Azure.Documents.DocumentCollection>,
         IReadable<Microsoft.Azure.Documents.Database>,
-        IDeleteable
+        IDeleteable, 
+        IClearable<IDatabase>,
+        IQueryableEntity<Microsoft.Azure.Documents.DocumentCollection>,
+        IQueryableWrappedEntity<IDocumentCollection<IId>>
     {
         /// <summary>
         /// This database's parent <see cref="IDocumentDbInstance"/>.
@@ -225,18 +257,20 @@ namespace DocumentDb.Fluent
         IDocumentDbInstance Instance { get; }
 
         /// <summary>
-        /// Gets (creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
+        /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
+        /// If a <param name="collectionId"> is not provided, then the Id of the collection will be inferred by <typeparamref name="TItemUnderlying">.
         /// </summary>
         /// <param name="collectionId">The Id of the <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</param>
         /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</returns>
-        IDocumentCollection<TItemUnderlying> Collection<TItemUnderlying>(string collectionId) where TItemUnderlying : class, IId;
+        IDocumentCollection<TItemUnderlying> Collection<TItemUnderlying>(string collectionId = null) where TItemUnderlying : class, IId;
 
         /// <summary>
         /// Gets (creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
+        /// If a <param name="collectionId"> is not provided, then the Id of the collection will be inferred by <typeparamref name="TItemUnderlying">.
         /// </summary>
         /// <param name="collectionId">The Id of the <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</param>
         /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</returns>
-        Task<IDocumentCollection<TItemUnderlying>> CollectionAsync<TItemUnderlying>(string collectionId) where TItemUnderlying : class, IId;
+        Task<IDocumentCollection<TItemUnderlying>> CollectionAsync<TItemUnderlying>(string collectionId = null) where TItemUnderlying : class, IId;
     }
 
     /// <summary>
@@ -248,7 +282,8 @@ namespace DocumentDb.Fluent
         IAddable<IDocumentCollection<TItemUnderlying>, TItemUnderlying>,
         IReadable<Microsoft.Azure.Documents.DocumentCollection>,
         IDeleteable,
-        IClearable<IDocumentCollection<TItemUnderlying>>
+        IClearable<IDocumentCollection<TItemUnderlying>>,
+        IQueryableEntity<TItemUnderlying>
         where TItemUnderlying : class, IId
     {
         /// <summary>
@@ -273,14 +308,11 @@ namespace DocumentDb.Fluent
         Task<IDocument<TItemUnderlying>> DocumentAsync(string documentId = null);
 
         /// <summary>
-        /// Gets the queryable collection of <see cref="IDocument{TUnderlying}"/>s.
-        /// </summary>
-        IOrderedQueryable<TItemUnderlying> Query { get; }
-
-        /// <summary>
         /// Gets the changes in the  collection of <see cref="IDocument{TUnderlying}"/>s since the last call.
         /// </summary>
         Task<IEnumerable<TItemUnderlying>> GetChangesAsync();
+
+        IDocumentCollection<T> Cast<T>() where T : class, TItemUnderlying;
     }
 
     /// <summary>
@@ -292,7 +324,7 @@ namespace DocumentDb.Fluent
         ICreateable<IDocument<TUnderlying>, TUnderlying>,
         IReadable<TUnderlying>,
         IUpdateable<IDocument<TUnderlying>, TUnderlying>,
-        IDeleteable
+        IDeleteable 
         where TUnderlying : class, IId
     {
         /// <summary>
@@ -313,6 +345,8 @@ namespace DocumentDb.Fluent
         /// <param name="mutator">A mutator action.</param>
         /// <returns>The wrapped document.</returns>
         Task<IDocument<TUnderlying>> EditAsync(Action<TUnderlying> mutator);
+
+        IDocument<T> Cast<T>() where T : class, TUnderlying;
     }
 
     /// <summary>

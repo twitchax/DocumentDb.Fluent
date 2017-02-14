@@ -12,7 +12,7 @@ dotnet add package DoumentDb.Fluent
 
 ### Testing
 
-Create an `appsettings.json` in `src/Tests` which defines your information.
+Create an `appsettings.json` in `src/Tests` which defines your DocumentDB information.  **WARNING: all databases will be cleaned up after the test is complete.**
 
 ```json
 {
@@ -52,7 +52,7 @@ var docId = collection.Document().Create(doc).Id;
 var todo = collection.Document(docId).Read();
 
 // Edit document.
-collection.Document(docId).Edit(o => o.Text = text);
+collection.Document(docId).Edit(o => o.Text = "newValue");
 
 // Delete document.
 collection.Document(docId).Delete();

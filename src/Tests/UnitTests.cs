@@ -6,7 +6,19 @@ using Xunit;
 
 namespace DocumentDb.Fluent.Tests
 {
-    public class UnitTests
+    public class TestsFixture : IDisposable
+    {
+        public TestsFixture()
+        {
+        }
+
+        public void Dispose()
+        {
+            Helpers.GetInstance().Clear();
+        }
+    }
+
+    public class UnitTests : IClassFixture<TestsFixture>
     {
         [Fact]
         public void HasDatabase()
@@ -25,6 +37,16 @@ namespace DocumentDb.Fluent.Tests
 
             Assert.NotNull(collection);
             Assert.NotNull(collection.Id);
+        }
+
+        [Fact]
+        public void CanInferCollectionName()
+        {
+            var collection = GetDatabase()
+                .Collection<TestObject>();
+
+            Assert.NotNull(collection);
+            Assert.Equal("TestObjects", collection.Id);
         }
 
         [Fact]
@@ -48,7 +70,7 @@ namespace DocumentDb.Fluent.Tests
                 .Collection<TestObject>(CollectionId);
             var obj = GetObject();
 
-            var docId = collection.Clear().Document().Create(obj).Id;
+            var docId = collection.Document().Create(obj).Id;
 
             var text = "Awesome";
             collection.Document(docId).Edit(o => o.Text = text);
@@ -70,7 +92,7 @@ namespace DocumentDb.Fluent.Tests
                 .Collection<TestObject>(CollectionId);
             var obj = GetObject();
 
-            var docId = collection.Clear().Document().Create(obj).Id;
+            var docId = collection.Document().Create(obj).Id;
             Assert.NotNull(collection.Document(docId).Read());
 
             collection.Document(docId).Delete();
@@ -85,7 +107,7 @@ namespace DocumentDb.Fluent.Tests
                 .Collection<TestObject>(CollectionId);
             var obj = GetObject();
 
-            var docId = (await collection.Clear().Document().CreateAsync(obj)).Id;
+            var docId = (await collection.Document().CreateAsync(obj)).Id;
             Assert.NotNull(await collection.Document(docId).ReadAsync());
 
             await collection.Document(docId).DeleteAsync();
@@ -98,8 +120,6 @@ namespace DocumentDb.Fluent.Tests
         {
             var collection = GetDatabase()
                 .Collection<TestObject>(CollectionId);
-
-            collection.Clear();
 
             var doc = GetObject();
             var docs = GetObjectList();
@@ -139,6 +159,35 @@ namespace DocumentDb.Fluent.Tests
         }
 
         [Fact]
+        public void CanQueryCollection()
+        {
+            var collection = GetDatabase()
+                .Collection<TestObject>(CollectionId);
+
+            collection.Add(new TestObject { Text = "1", Int = 1, Double = 1 });
+            collection.Add(new TestObject { Text = "1", Int = 1, Double = 1 });
+            collection.Add(new TestObject { Text = "2", Int = 2, Double = 2 });
+
+            Assert.Equal(2, collection.Query.Where(o => o.Text == "1").AsEnumerable().Count());
+            Assert.Equal(1, collection.Query.Where(o => o.Text == "2").AsEnumerable().Count());
+        }
+
+        [Fact]
+        public void CanCastDocumentCollection()
+        {
+            var db = GetDatabase();
+            var collection = db.Collection<TestObject>(CollectionId);
+
+            collection.Add(new TestObject { Text = "1", Int = 1, Double = 1 });
+            collection.Add(new TestObject { Text = "1", Int = 1, Double = 1 });
+            collection.Add(new TestObject { Text = "2", Int = 2, Double = 2 });
+
+            Assert.Equal(1, db.WrappedQuery.Count());
+            Assert.Equal(2, db.WrappedQuery.First().Cast<TestObject>().Query.Where(o => o.Text == "1").AsEnumerable().Count());
+            Assert.Equal(null, db.WrappedQuery.First().Document().Create(GetObject()).Cast<TestObject2>().Read().Text2);
+        }
+
+        [Fact]
         public void CanDeleteCollection()
         {
             var collection = GetDatabase()
@@ -165,16 +214,29 @@ namespace DocumentDb.Fluent.Tests
             Assert.ThrowsAny<Exception>(() => db.Read());
         }
 
-        #region Helpers
+        [Fact]
+        public void CanClearDatabase()
+        {
+            var db = GetDatabase();
 
-        private const string DatabaseId = "MyDatabase";
-        private const string CollectionId = "MyCollection";
+            Assert.NotNull(db);
+            Assert.NotNull(db.Id);
+
+            db.Collection<TestObject>("Collection1");
+            db.Collection<TestObject>("Collection2");
+
+            Assert.Equal(2, db.Query.AsEnumerable().Count());
+            Assert.Equal(0, db.Clear().Query.AsEnumerable().Count());
+        }
+
+        #region Helpers
+        
+        private const string CollectionId = "MyTestCollection";
 
         private IDatabase GetDatabase()
         {
-            return DocumentDbInstance
-                .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
-                .Database(DatabaseId);
+            return Helpers.GetInstance()
+                .Database(Guid.NewGuid().ToString());
         }
 
         private TestObject GetObject()

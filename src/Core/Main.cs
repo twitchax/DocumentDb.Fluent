@@ -24,6 +24,8 @@ namespace DocumentDb.Fluent
             Client = new DocumentClient(new Uri(_endpointUri), _key);
         }
 
+        #region IDocumentDbInstance
+
         public static IDocumentDbInstance Connect(string endpointUri, string primaryKey)
         {
             return new DocumentDbInstance(endpointUri, primaryKey);
@@ -40,6 +42,87 @@ namespace DocumentDb.Fluent
             var db = new Database(this, dbId);
             return await db.InitAsync();
         }
+
+        #endregion
+
+        #region CRUD
+
+        public IDocumentDbInstance Add(Microsoft.Azure.Documents.Database database)
+        {
+            var task = Client.CreateDatabaseAsync(database);
+            task.Wait();
+
+            return this;
+        }
+
+        public async Task<IDocumentDbInstance> AddAsync(Microsoft.Azure.Documents.Database database)
+        {
+            await Client.CreateDatabaseAsync(database);
+
+            return this;
+        }
+
+        public IDocumentDbInstance Add(IEnumerable<Microsoft.Azure.Documents.Database> databases)
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
+
+            foreach(var database in databases)
+            {
+                tasks.Add(Client.CreateDatabaseAsync(database));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+
+            return this;
+        }
+
+        public async Task<IDocumentDbInstance> AddAsync(IEnumerable<Microsoft.Azure.Documents.Database> databases)
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
+
+            foreach (var database in databases)
+            {
+                tasks.Add(Client.CreateDatabaseAsync(database));
+            }
+
+            await Task.WhenAll(tasks.ToArray());
+
+            return this;
+        }
+
+        public IDocumentDbInstance Clear()
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
+
+            foreach(var db in Client.CreateDatabaseQuery())
+            {
+                tasks.Add(Client.DeleteDatabaseAsync(db.SelfLink));
+            }
+
+            Task.WaitAll();
+            
+            return this;
+        }
+
+        public async Task<IDocumentDbInstance> ClearAsync()
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
+
+            foreach (var db in Client.CreateDatabaseQuery())
+            {
+                tasks.Add(Client.DeleteDatabaseAsync(db.SelfLink));
+            }
+
+            await Task.WhenAll();
+
+            return this;
+        }
+
+        public IOrderedQueryable<Microsoft.Azure.Documents.Database> Query => Client.CreateDatabaseQuery();
+
+        public IEnumerable<IDatabase> WrappedQuery => Query.AsEnumerable().Select(db => new Database(this, db.Id));
+
+        #endregion
     }
 
     /// <summary>
@@ -71,23 +154,72 @@ namespace DocumentDb.Fluent
             return this;
         }
 
-    #region IDatabase
+        #region IDatabase
 
-        public IDocumentCollection<TUnderlying> Collection<TUnderlying>(string collectionId) where TUnderlying : class, IId
+        public IDocumentCollection<TUnderlying> Collection<TUnderlying>(string collectionId = null) where TUnderlying : class, IId
         {
+            if (collectionId == null)
+                collectionId = $"{typeof(TUnderlying).Name}s";
+
             var collection = new DocumentCollection<TUnderlying>(this, collectionId);
             return collection.Init();
         }
 
-        public async Task<IDocumentCollection<TUnderlying>> CollectionAsync<TUnderlying>(string collectionId) where TUnderlying : class, IId
+        public async Task<IDocumentCollection<TUnderlying>> CollectionAsync<TUnderlying>(string collectionId = null) where TUnderlying : class, IId
         {
+            if (collectionId == null)
+                collectionId = $"{typeof(TUnderlying).Name}s";
+
             var collection = new DocumentCollection<TUnderlying>(this, collectionId);
             return await collection.InitAsync();
         }
 
-    #endregion
+        #endregion
 
-    #region CRUD
+        #region CRUD
+
+        public IDatabase Add(Microsoft.Azure.Documents.DocumentCollection collection)
+        {
+            var task = Client.CreateDocumentCollectionAsync(this.Link, collection);
+            task.Wait();
+
+            return this;
+        }
+
+        public async Task<IDatabase> AddAsync(Microsoft.Azure.Documents.DocumentCollection collection)
+        {
+            await Client.CreateDocumentCollectionAsync(this.Link, collection);
+
+            return this;
+        }
+
+        public IDatabase Add(IEnumerable<Microsoft.Azure.Documents.DocumentCollection> collections)
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.DocumentCollection>>>();
+
+            foreach (var collection in collections)
+            {
+                tasks.Add(Client.CreateDocumentCollectionAsync(this.Link, collection));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+
+            return this;
+        }
+
+        public async Task<IDatabase> AddAsync(IEnumerable<Microsoft.Azure.Documents.DocumentCollection> collections)
+        {
+            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.DocumentCollection>>>();
+
+            foreach (var collection in collections)
+            {
+                tasks.Add(Client.CreateDocumentCollectionAsync(this.Link, collection));
+            }
+
+            await Task.WhenAll(tasks.ToArray());
+
+            return this;
+        }
 
         public Microsoft.Azure.Documents.Database Read()
         {
@@ -111,7 +243,23 @@ namespace DocumentDb.Fluent
             return Client.DeleteDatabaseAsync(this.Link);
         }
 
-    #endregion
+        public IDatabase Clear()
+        {
+            Client.DeleteDatabaseAsync(this.Link).Wait();
+            return this.Init();
+        }
+
+        public async Task<IDatabase> ClearAsync()
+        {
+            await Client.DeleteDatabaseAsync(this.Link);
+            return await this.InitAsync();
+        }
+
+        public IOrderedQueryable<Microsoft.Azure.Documents.DocumentCollection> Query => Client.CreateDocumentCollectionQuery(this.Link);
+
+        public IEnumerable<IDocumentCollection<IId>> WrappedQuery => Query.AsEnumerable().Select(db => new DocumentCollection<IId>(this, db.Id));
+
+        #endregion
     }
 
     /// <summary>
@@ -146,7 +294,7 @@ namespace DocumentDb.Fluent
             return this;
         }
 
-    #region IDocumentCollection
+        #region IDocumentCollection
 
         public IDocument<TUnderlying> Document(string documentId = null)
         {
@@ -156,12 +304,10 @@ namespace DocumentDb.Fluent
 
         public async Task<IDocument<TUnderlying>> DocumentAsync(string documentId = null)
         {
-            
+
             var document = new Document<TUnderlying>(this, documentId);
             return await document.InitAsync();
         }
-
-        public IOrderedQueryable<TUnderlying> Query => Client.CreateDocumentQuery<TUnderlying>(this.Link);
 
         public async Task<IEnumerable<TUnderlying>> GetChangesAsync()
         {
@@ -172,7 +318,7 @@ namespace DocumentDb.Fluent
             do
             {
                 var pkRangesResponse = await Client.ReadPartitionKeyRangeFeedAsync(
-                    this.Link, 
+                    this.Link,
                     new FeedOptions { RequestContinuation = pkRangesResponseContinuation });
 
                 partitionKeyRanges.AddRange(pkRangesResponse);
@@ -182,8 +328,7 @@ namespace DocumentDb.Fluent
 
             foreach (Microsoft.Azure.Documents.PartitionKeyRange pkRange in partitionKeyRanges)
             {
-                string continuation = null;
-                _checkpoints.TryGetValue(pkRange.Id, out continuation);
+                _checkpoints.TryGetValue(pkRange.Id, out string continuation);
 
                 var query = Client.CreateDocumentChangeFeedQuery(
                     this.Link,
@@ -209,6 +354,11 @@ namespace DocumentDb.Fluent
             }
 
             return result;
+        }
+
+        public IDocumentCollection<T> Cast<T>() where T : class, TUnderlying
+        {
+            return new DocumentCollection<T>(this.Database, this.Id);
         }
 
         #endregion
@@ -238,7 +388,7 @@ namespace DocumentDb.Fluent
         {
             var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Document>>>();
 
-            foreach(var document in documents)
+            foreach (var document in documents)
                 tasks.Add(Client.CreateDocumentAsync(this.Link, document));
 
             Task.WaitAll(tasks.ToArray());
@@ -250,7 +400,7 @@ namespace DocumentDb.Fluent
         {
             var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Document>>>();
 
-            foreach(var document in documents)
+            foreach (var document in documents)
                 tasks.Add(Client.CreateDocumentAsync(this.Link, document));
 
             await Task.WhenAll(tasks.ToArray());
@@ -293,6 +443,8 @@ namespace DocumentDb.Fluent
             return await this.InitAsync();
         }
 
+        public IOrderedQueryable<TUnderlying> Query => Client.CreateDocumentQuery<TUnderlying>(this.Link);
+
         #endregion
     }
 
@@ -324,7 +476,7 @@ namespace DocumentDb.Fluent
             return Task.FromResult(this as IDocument<TUnderlying>);
         }
 
-    #region IDocument
+        #region IDocument
 
         public IDocument<TUnderlying> Edit(Action<TUnderlying> func)
         {
@@ -342,6 +494,11 @@ namespace DocumentDb.Fluent
             await this.UpdateAsync(document);
 
             return this;
+        }
+
+        public IDocument<T> Cast<T>() where T : class, TUnderlying
+        {
+            return new Document<T>(this.Collection.Cast<T>(), this.Id);
         }
 
         #endregion
@@ -368,7 +525,7 @@ namespace DocumentDb.Fluent
         {
             var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Document>>>();
 
-            foreach(var document in documents)
+            foreach (var document in documents)
                 tasks.Add(Client.CreateDocumentAsync(Collection.Link, document));
 
             Task.WaitAll(tasks.ToArray());
@@ -433,6 +590,6 @@ namespace DocumentDb.Fluent
             return Client.DeleteDocumentAsync(this.Link);
         }
 
-    #endregion
+        #endregion
     }
 }
