@@ -310,6 +310,11 @@ namespace DocumentDb.Fluent
         /// <summary>
         /// Gets the changes in the  collection of <see cref="IDocument{TUnderlying}"/>s since the last call.
         /// </summary>
+        IEnumerable<TItemUnderlying> GetChanges();
+
+        /// <summary>
+        /// Gets the changes in the  collection of <see cref="IDocument{TUnderlying}"/>s since the last call.
+        /// </summary>
         Task<IEnumerable<TItemUnderlying>> GetChangesAsync();
 
         IDocumentCollection<T> Cast<T>() where T : class, TItemUnderlying;

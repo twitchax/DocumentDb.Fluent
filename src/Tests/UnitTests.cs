@@ -14,7 +14,7 @@ namespace DocumentDb.Fluent.Tests
 
         public void Dispose()
         {
-            Helpers.GetInstance().Clear();
+            Assert.Equal(0, Helpers.GetInstance().Clear().Query.AsEnumerable().Count());
         }
     }
 

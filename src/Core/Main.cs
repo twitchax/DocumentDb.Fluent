@@ -33,8 +33,7 @@ namespace DocumentDb.Fluent
 
         public IDatabase Database(string dbId)
         {
-            var db = new Database(this, dbId);
-            return db.Init();
+            return Helpers.Synchronize(this.DatabaseAsync(dbId));
         }
 
         public async Task<IDatabase> DatabaseAsync(string dbId)
@@ -49,10 +48,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentDbInstance Add(Microsoft.Azure.Documents.Database database)
         {
-            var task = Client.CreateDatabaseAsync(database);
-            task.Wait();
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(database));
         }
 
         public async Task<IDocumentDbInstance> AddAsync(Microsoft.Azure.Documents.Database database)
@@ -64,16 +60,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentDbInstance Add(IEnumerable<Microsoft.Azure.Documents.Database> databases)
         {
-            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
-
-            foreach(var database in databases)
-            {
-                tasks.Add(Client.CreateDatabaseAsync(database));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(databases));
         }
 
         public async Task<IDocumentDbInstance> AddAsync(IEnumerable<Microsoft.Azure.Documents.Database> databases)
@@ -92,16 +79,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentDbInstance Clear()
         {
-            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Database>>>();
-
-            foreach(var db in Client.CreateDatabaseQuery())
-            {
-                tasks.Add(Client.DeleteDatabaseAsync(db.SelfLink));
-            }
-
-            Task.WaitAll();
-            
-            return this;
+            return Helpers.Synchronize(this.ClearAsync());
         }
 
         public async Task<IDocumentDbInstance> ClearAsync()
@@ -113,7 +91,7 @@ namespace DocumentDb.Fluent
                 tasks.Add(Client.DeleteDatabaseAsync(db.SelfLink));
             }
 
-            await Task.WhenAll();
+            await Task.WhenAll(tasks.ToArray());
 
             return this;
         }
@@ -144,8 +122,7 @@ namespace DocumentDb.Fluent
 
         public IDatabase Init()
         {
-            Client.CreateDatabaseIfNotExistsAsync(new Microsoft.Azure.Documents.Database { Id = this.Id }).Wait();
-            return this;
+            return Helpers.Synchronize(this.InitAsync());
         }
 
         public async Task<IDatabase> InitAsync()
@@ -158,11 +135,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentCollection<TUnderlying> Collection<TUnderlying>(string collectionId = null) where TUnderlying : class, IId
         {
-            if (collectionId == null)
-                collectionId = $"{typeof(TUnderlying).Name}s";
-
-            var collection = new DocumentCollection<TUnderlying>(this, collectionId);
-            return collection.Init();
+            return Helpers.Synchronize(this.CollectionAsync<TUnderlying>(collectionId));
         }
 
         public async Task<IDocumentCollection<TUnderlying>> CollectionAsync<TUnderlying>(string collectionId = null) where TUnderlying : class, IId
@@ -180,10 +153,7 @@ namespace DocumentDb.Fluent
 
         public IDatabase Add(Microsoft.Azure.Documents.DocumentCollection collection)
         {
-            var task = Client.CreateDocumentCollectionAsync(this.Link, collection);
-            task.Wait();
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(collection));
         }
 
         public async Task<IDatabase> AddAsync(Microsoft.Azure.Documents.DocumentCollection collection)
@@ -195,16 +165,7 @@ namespace DocumentDb.Fluent
 
         public IDatabase Add(IEnumerable<Microsoft.Azure.Documents.DocumentCollection> collections)
         {
-            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.DocumentCollection>>>();
-
-            foreach (var collection in collections)
-            {
-                tasks.Add(Client.CreateDocumentCollectionAsync(this.Link, collection));
-            }
-
-            Task.WaitAll(tasks.ToArray());
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(collections));
         }
 
         public async Task<IDatabase> AddAsync(IEnumerable<Microsoft.Azure.Documents.DocumentCollection> collections)
@@ -223,10 +184,7 @@ namespace DocumentDb.Fluent
 
         public Microsoft.Azure.Documents.Database Read()
         {
-            var task = Client.ReadDatabaseAsync(this.Link);
-            task.Wait();
-
-            return task.Result.Resource;
+            return Helpers.Synchronize(this.ReadAsync());
         }
         public async Task<Microsoft.Azure.Documents.Database> ReadAsync()
         {
@@ -235,7 +193,7 @@ namespace DocumentDb.Fluent
 
         public void Delete()
         {
-            Client.DeleteDatabaseAsync(this.Link).Wait();
+            Helpers.Synchronize(this.DeleteAsync());
         }
 
         public Task DeleteAsync()
@@ -245,8 +203,7 @@ namespace DocumentDb.Fluent
 
         public IDatabase Clear()
         {
-            Client.DeleteDatabaseAsync(this.Link).Wait();
-            return this.Init();
+            return Helpers.Synchronize(this.ClearAsync());
         }
 
         public async Task<IDatabase> ClearAsync()
@@ -284,8 +241,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentCollection<TUnderlying> Init()
         {
-            Client.CreateDocumentCollectionIfNotExistsAsync(Database.Link, new Microsoft.Azure.Documents.DocumentCollection { Id = this.Id }).Wait();
-            return this;
+            return Helpers.Synchronize(this.InitAsync());
         }
 
         public async Task<IDocumentCollection<TUnderlying>> InitAsync()
@@ -298,8 +254,7 @@ namespace DocumentDb.Fluent
 
         public IDocument<TUnderlying> Document(string documentId = null)
         {
-            var document = new Document<TUnderlying>(this, documentId);
-            return document.Init();
+            return Helpers.Synchronize(this.DocumentAsync(documentId));
         }
 
         public async Task<IDocument<TUnderlying>> DocumentAsync(string documentId = null)
@@ -307,6 +262,11 @@ namespace DocumentDb.Fluent
 
             var document = new Document<TUnderlying>(this, documentId);
             return await document.InitAsync();
+        }
+
+        public IEnumerable<TUnderlying> GetChanges()
+        {
+            return Helpers.Synchronize(this.GetChangesAsync());
         }
 
         public async Task<IEnumerable<TUnderlying>> GetChangesAsync()
@@ -367,13 +327,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentCollection<TUnderlying> Add(TUnderlying document)
         {
-            var task = Client.CreateDocumentAsync(this.Link, document);
-            task.Wait();
-
-            var doc = new Document<TUnderlying>(this, task.Result.Resource.Id);
-            doc.Init();
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(document));
         }
 
         public async Task<IDocumentCollection<TUnderlying>> AddAsync(TUnderlying document)
@@ -386,14 +340,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentCollection<TUnderlying> Add(IEnumerable<TUnderlying> documents)
         {
-            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Document>>>();
-
-            foreach (var document in documents)
-                tasks.Add(Client.CreateDocumentAsync(this.Link, document));
-
-            Task.WaitAll(tasks.ToArray());
-
-            return this;
+            return Helpers.Synchronize(this.AddAsync(documents));
         }
 
         public async Task<IDocumentCollection<TUnderlying>> AddAsync(IEnumerable<TUnderlying> documents)
@@ -410,10 +357,7 @@ namespace DocumentDb.Fluent
 
         public Microsoft.Azure.Documents.DocumentCollection Read()
         {
-            var task = Client.ReadDocumentCollectionAsync(this.Link);
-            task.Wait();
-
-            return task.Result.Resource;
+            return Helpers.Synchronize(this.ReadAsync());
         }
 
         public async Task<Microsoft.Azure.Documents.DocumentCollection> ReadAsync()
@@ -423,7 +367,7 @@ namespace DocumentDb.Fluent
 
         public void Delete()
         {
-            Client.DeleteDocumentCollectionAsync(this.Link).Wait();
+            Helpers.Synchronize(this.DeleteAsync());
         }
 
         public Task DeleteAsync()
@@ -433,8 +377,7 @@ namespace DocumentDb.Fluent
 
         public IDocumentCollection<TUnderlying> Clear()
         {
-            Client.DeleteDocumentCollectionAsync(this.Link).Wait();
-            return this.Init();
+            return Helpers.Synchronize(this.ClearAsync());
         }
 
         public async Task<IDocumentCollection<TUnderlying>> ClearAsync()
@@ -480,11 +423,7 @@ namespace DocumentDb.Fluent
 
         public IDocument<TUnderlying> Edit(Action<TUnderlying> func)
         {
-            var document = this.Read();
-            func(document);
-            this.Update(document);
-
-            return this;
+            return Helpers.Synchronize(this.EditAsync(func));
         }
 
         public async Task<IDocument<TUnderlying>> EditAsync(Action<TUnderlying> func)
@@ -507,12 +446,7 @@ namespace DocumentDb.Fluent
 
         public IDocument<TUnderlying> Create(TUnderlying document)
         {
-            var task = Client.CreateDocumentAsync(Collection.Link, document);
-            task.Wait();
-
-            this.Id = task.Result.Resource.Id;
-
-            return this;
+            return Helpers.Synchronize(this.CreateAsync(document));
         }
 
         public async Task<IDocument<TUnderlying>> CreateAsync(TUnderlying document)
@@ -523,18 +457,7 @@ namespace DocumentDb.Fluent
 
         public IEnumerable<IDocument<TUnderlying>> Create(IEnumerable<TUnderlying> documents)
         {
-            var tasks = new List<Task<ResourceResponse<Microsoft.Azure.Documents.Document>>>();
-
-            foreach (var document in documents)
-                tasks.Add(Client.CreateDocumentAsync(Collection.Link, document));
-
-            Task.WaitAll(tasks.ToArray());
-
-            return tasks.Select(t =>
-            {
-                var doc = new Document<TUnderlying>(this.Collection, t.Result.Resource.Id);
-                return doc.Init();
-            });
+            return Helpers.Synchronize(this.CreateAsync(documents));
         }
 
         public async Task<IEnumerable<IDocument<TUnderlying>>> CreateAsync(IEnumerable<TUnderlying> documents)
@@ -555,10 +478,7 @@ namespace DocumentDb.Fluent
 
         public TUnderlying Read()
         {
-            var task = Client.ReadDocumentAsync(this.Link);
-            task.Wait();
-
-            return (TUnderlying)(dynamic)task.Result.Resource;
+            return Helpers.Synchronize(this.ReadAsync());
         }
 
         public async Task<TUnderlying> ReadAsync()
@@ -568,9 +488,7 @@ namespace DocumentDb.Fluent
 
         public IDocument<TUnderlying> Update(TUnderlying document)
         {
-            document.Id = this.Id;
-            Client.UpsertDocumentAsync(this.Collection.Link, document).Wait();
-            return this;
+            return Helpers.Synchronize(this.UpdateAsync(document));
         }
 
         public async Task<IDocument<TUnderlying>> UpdateAsync(TUnderlying document)
@@ -582,7 +500,7 @@ namespace DocumentDb.Fluent
 
         public void Delete()
         {
-            Client.DeleteDocumentAsync(this.Link).Wait();
+            Helpers.Synchronize(this.DeleteAsync());
         }
 
         public Task DeleteAsync()
