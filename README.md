@@ -38,7 +38,7 @@ Latest .NET Core.
 Basic examples.
 
 ```csharp
-var collection = DocumentDbInstance
+var collection = Account
     .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
     .Database("MyDb")
     .Collection("MyTodos");
@@ -61,7 +61,7 @@ collection.Document(docId).Delete();
 Synchronous and asynchronous options.
 
 ```csharp
-var collection = DocumentDbInstance
+var collection = Account
     .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
     .Database("MyDb")
     .Collection("MyTodos");
@@ -88,7 +88,7 @@ await collection.Document().CreateAsync(docs);
 Queries.
 
 ```csharp
-var collection = DocumentDbInstance
+var collection = Account
     .Connect(Helpers.Configuration["EndpointUri"], Helpers.Configuration["PrimaryKey"])
     .Database("MyDb")
     .Collection("MyTodos");
@@ -102,7 +102,7 @@ var current = await collection.GetChangesAsync();
 collection.Document().Create(NewTodo());
 collection.Document().Create(NewTodo());
 
-var addedSinceCurrent = await collection.GetChangesAsync();
+var addedSinceCurrent = collection.GetChanges();
 ```
 
 ## License
