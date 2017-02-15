@@ -10,6 +10,10 @@ DocumentDB interaction made easy.
 dotnet add package DoumentDb.Fluent
 ```
 
+### Upgrade from 1.X.X to 2.X.X
+
+* `DocumentDbInstance` => `Account`
+
 ### Testing
 
 Create an `appsettings.json` in `src/Tests` which defines your DocumentDB information.  **WARNING: all databases will be cleaned up after the test is complete.**
