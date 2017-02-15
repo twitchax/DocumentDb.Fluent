@@ -10,11 +10,12 @@ namespace DocumentDb.Fluent.Tests
     {
         public TestsFixture()
         {
+            Assert.Equal(0, Helpers.GetAccount().Clear().Query.AsEnumerable().Count());
         }
 
         public void Dispose()
         {
-            Assert.Equal(0, Helpers.GetInstance().Clear().Query.AsEnumerable().Count());
+            Assert.Equal(0, Helpers.GetAccount().Clear().Query.AsEnumerable().Count());
         }
     }
 
@@ -37,6 +38,7 @@ namespace DocumentDb.Fluent.Tests
 
             Assert.NotNull(collection);
             Assert.NotNull(collection.Id);
+            Assert.NotNull(collection.Read());
         }
 
         [Fact]
@@ -47,6 +49,38 @@ namespace DocumentDb.Fluent.Tests
 
             Assert.NotNull(collection);
             Assert.Equal("TestObjects", collection.Id);
+            Assert.NotNull(collection.Read());
+        }
+
+        [Fact]
+        public void CanCreateCollectionWithOptions()
+        {
+            var collection = GetDatabase()
+                .Collection<TestObject>()
+                .WithRequestOptions(new Microsoft.Azure.Documents.Client.RequestOptions
+                {
+                     OfferThroughput = 500
+                });
+
+            Assert.NotNull(collection);
+            Assert.NotNull(collection.Read());
+        }
+
+        [Fact]
+        public void CanEditCollection()
+        {
+            var collection = GetDatabase()
+                .Collection<TestObject>();
+
+            collection.Document().Create(GetObject());
+
+            Assert.NotNull(collection);
+            Assert.NotNull(collection.Read());
+            Assert.Equal(Microsoft.Azure.Documents.IndexingMode.Consistent, collection.Read().IndexingPolicy.IndexingMode);
+
+            collection.Edit(c => c.IndexingPolicy.IndexingMode = Microsoft.Azure.Documents.IndexingMode.Lazy);
+
+            Assert.Equal(Microsoft.Azure.Documents.IndexingMode.Lazy, collection.Read().IndexingPolicy.IndexingMode);
         }
 
         [Fact]
@@ -222,8 +256,13 @@ namespace DocumentDb.Fluent.Tests
             Assert.NotNull(db);
             Assert.NotNull(db.Id);
 
-            db.Collection<TestObject>("Collection1");
-            db.Collection<TestObject>("Collection2");
+            var c1 = db.Collection<TestObject>("Collection1");
+            var c2 = db.Collection<TestObject>("Collection2");
+
+            Assert.Equal(0, db.Query.AsEnumerable().Count());
+
+            c1.Read();
+            c2.Read();
 
             Assert.Equal(2, db.Query.AsEnumerable().Count());
             Assert.Equal(0, db.Clear().Query.AsEnumerable().Count());
@@ -235,7 +274,7 @@ namespace DocumentDb.Fluent.Tests
 
         private IDatabase GetDatabase()
         {
-            return Helpers.GetInstance()
+            return Helpers.GetAccount()
                 .Database(Guid.NewGuid().ToString());
         }
 

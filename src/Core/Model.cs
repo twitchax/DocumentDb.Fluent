@@ -41,42 +41,13 @@ namespace DocumentDb.Fluent
         /// <param name="objs">The underlying entities to create.</param>
         /// <returns>The wrapped entities.</returns>
         Task<IEnumerable<TSelfWrapper>> CreateAsync(IEnumerable<TUnderlying> objs);
-    }
-
-    /// <summary>
-    /// Provides a mechanism for adding an entity to a collection type.
-    /// </summary>
-    /// <typeparam name="TSelfWrapper">The wrapped item type (e.g., <see cref="IDatabase"/>).</typeparam>
-    /// <typeparam name="TItemUnderlying">The underlying item type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
-    public interface IAddable<TSelfWrapper, in TItemUnderlying>
-    {
-        /// <summary>
-        /// Adds an entity to this collection type.
-        /// </summary>
-        /// <param name="obj">The underlying entity.</param>
-        /// <returns>This collection.</returns>
-        TSelfWrapper Add(TItemUnderlying obj);
 
         /// <summary>
-        /// Adds an entity to this collection type.
+        /// Set request options before create.
         /// </summary>
-        /// <param name="obj">The underlying entity.</param>
-        /// <returns>This collection.</returns>
-        Task<TSelfWrapper> AddAsync(TItemUnderlying obj);
-
-        /// <summary>
-        /// Adds entities to this collection type.
-        /// </summary>
-        /// <param name="objs">The underlying entities.</param>
-        /// <returns>This collection.</returns>
-        TSelfWrapper Add(IEnumerable<TItemUnderlying> objs);
-
-        /// <summary>
-        /// Adds entities to this collection type.
-        /// </summary>
-        /// <param name="objs">The underlying entities.</param>
-        /// <returns>This collection.</returns>
-        Task<TSelfWrapper> AddAsync(IEnumerable<TItemUnderlying> objs);
+        /// <param name="options">The <see cref="RequestOptions"/>.</param>
+        /// <returns>The wrapped entity.</returns>
+        TSelfWrapper WithRequestOptions(RequestOptions options);
     }
 
     /// <summary>
@@ -121,6 +92,28 @@ namespace DocumentDb.Fluent
     }
 
     /// <summary>
+    /// Provides a mechanism for editing an entity.
+    /// </summary>
+    /// <typeparam name="TSelfWrapper">The wrapping type (e.g., <see cref="IDatabase"/>).</typeparam>
+    /// <typeparam name="TUnderlying">The underlying type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
+    public interface IEditable<TSelfWrapper, TUnderlying>
+    {
+        /// <summary>
+        /// Edits this document in place and commits the change.
+        /// </summary>
+        /// <param name="mutator">A mutator action.</param>
+        /// <returns>The wrapped document.</returns>
+        TSelfWrapper Edit(Action<TUnderlying> mutator);
+
+        /// <summary>
+        /// Edits this document in place and commits the change.
+        /// </summary>
+        /// <param name="mutator">A mutator action.</param>
+        /// <returns>The wrapped document.</returns>
+        Task<TSelfWrapper> EditAsync(Action<TUnderlying> mutator);
+    }
+
+    /// <summary>
     /// Provides a mechanism for deleting an entity.
     /// </summary>
     public interface IDeleteable
@@ -134,6 +127,42 @@ namespace DocumentDb.Fluent
         /// Deletes this entity.
         /// </summary>
         Task DeleteAsync();
+    }
+
+    /// <summary>
+    /// Provides a mechanism for adding an entity to a collection type.
+    /// </summary>
+    /// <typeparam name="TSelfWrapper">The wrapped item type (e.g., <see cref="IDatabase"/>).</typeparam>
+    /// <typeparam name="TItemUnderlying">The underlying item type (e.g., <see cref="Microsoft.Azure.Documents.Database"/>).</typeparam>
+    public interface IAddable<TSelfWrapper, in TItemUnderlying>
+    {
+        /// <summary>
+        /// Adds an entity to this collection type.
+        /// </summary>
+        /// <param name="obj">The underlying entity.</param>
+        /// <returns>This collection.</returns>
+        TSelfWrapper Add(TItemUnderlying obj);
+
+        /// <summary>
+        /// Adds an entity to this collection type.
+        /// </summary>
+        /// <param name="obj">The underlying entity.</param>
+        /// <returns>This collection.</returns>
+        Task<TSelfWrapper> AddAsync(TItemUnderlying obj);
+
+        /// <summary>
+        /// Adds entities to this collection type.
+        /// </summary>
+        /// <param name="objs">The underlying entities.</param>
+        /// <returns>This collection.</returns>
+        TSelfWrapper Add(IEnumerable<TItemUnderlying> objs);
+
+        /// <summary>
+        /// Adds entities to this collection type.
+        /// </summary>
+        /// <param name="objs">The underlying entities.</param>
+        /// <returns>This collection.</returns>
+        Task<TSelfWrapper> AddAsync(IEnumerable<TItemUnderlying> objs);
     }
 
     /// <summary>
@@ -177,35 +206,6 @@ namespace DocumentDb.Fluent
     }
 
     /// <summary>
-    /// Provides a representation of a top-level DocumentDB instance ((loosely wraps <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/>)).
-    /// </summary>
-    public interface IDocumentDbInstance :
-        IAddable<IDocumentDbInstance, Microsoft.Azure.Documents.Database>,
-        IClearable<IDocumentDbInstance>, 
-        IQueryableEntity<Microsoft.Azure.Documents.Database>,
-        IQueryableWrappedEntity<IDatabase>
-    {
-        /// <summary>
-        /// The underlying <see cref="DocumentClient"/>.
-        /// </summary>
-        DocumentClient Client { get; }
-
-        /// <summary>
-        /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.Database"/>.
-        /// </summary>
-        /// <param name="dbId">The Id of the <see cref="Microsoft.Azure.Documents.Database"/>.</param>
-        /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.Database"/>.</returns>
-        IDatabase Database(string dbId);
-
-        /// <summary>
-        /// Gets (creates, if needed) a <see cref="Microsoft.Azure.Documents.Database"/>.
-        /// </summary>
-        /// <param name="dbId">The Id of the <see cref="Microsoft.Azure.Documents.Database"/>.</param>
-        /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.Database"/>.</returns>
-        Task<IDatabase> DatabaseAsync(string dbId);
-    }
-
-    /// <summary>
     /// Provides a representation of entities in DocumentDB.
     /// </summary>
     /// <typeparam name="TSelfWrapper">The type of the wrapper (e.g., <see cref="IDatabase"/>).</typeparam>
@@ -224,37 +224,77 @@ namespace DocumentDb.Fluent
         /// <summary>
         /// The full SelfLink for this entity.
         /// </summary>
-        Uri Link { get; }
+        Uri GetLink();
+
+        /// <summary>
+        /// The full SelfLink for this entity.
+        /// </summary>
+        Task<Uri> GetLinkAsync();
 
         /// <summary>
         /// Initializes the entity.
         /// </summary>
         /// <returns>The wrapped entity.</returns>
-        TSelfWrapper Init();
+        Task<TSelfWrapper> EnsureAsync();
+    }
+
+    public interface ICrd<TWrapperSelf, TUnderlying> :
+        IEntity<TWrapperSelf>,
+        ICreateable<TWrapperSelf, TUnderlying>,
+        IReadable<TUnderlying>,
+        IDeleteable
+    {
+
+    }
+
+    public interface ICrud<TWrapperSelf, TUnderlying> :
+        ICrd<TWrapperSelf, TUnderlying>,
+        IUpdateable<TWrapperSelf, TUnderlying>,
+        IEditable<TWrapperSelf, TUnderlying>
+    {
+
+    }
+
+    public interface ICollectionCrud<TWrapperSelf, TItemUnderlying, TItemWrapper> :
+        IAddable<TWrapperSelf, TItemUnderlying>,
+        IClearable<TWrapperSelf>,
+        IQueryableEntity<TItemUnderlying>,
+        IQueryableWrappedEntity<TItemWrapper>
+    {
+
+    }
+
+    /// <summary>
+    /// Provides a representation of a top-level DocumentDB account.
+    /// </summary>
+    public interface IAccount : 
+        IReadable<Microsoft.Azure.Documents.DatabaseAccount>, 
+        ICollectionCrud<IAccount, Microsoft.Azure.Documents.Database, IDatabase>
+    {
+        /// <summary>
+        /// The underlying <see cref="DocumentClient"/>.
+        /// </summary>
+        DocumentClient Client { get; }
 
         /// <summary>
-        /// Initializes the entity.
+        /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.Database"/>.
         /// </summary>
-        /// <returns>The wrapped entity.</returns>
-        Task<TSelfWrapper> InitAsync();
+        /// <param name="dbId">The Id of the <see cref="Microsoft.Azure.Documents.Database"/>.</param>
+        /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.Database"/>.</returns>
+        IDatabase Database(string dbId = null);
     }
 
     /// <summary>
     /// Provides a representation of a <see cref="Microsoft.Azure.Documents.Database"/>.
     /// </summary>
     public interface IDatabase :
-        IEntity<IDatabase>,
-        IAddable<IDatabase, Microsoft.Azure.Documents.DocumentCollection>,
-        IReadable<Microsoft.Azure.Documents.Database>,
-        IDeleteable, 
-        IClearable<IDatabase>,
-        IQueryableEntity<Microsoft.Azure.Documents.DocumentCollection>,
-        IQueryableWrappedEntity<IDocumentCollection<IId>>
+        ICrd<IDatabase, Microsoft.Azure.Documents.Database>, 
+        ICollectionCrud<IDatabase, Microsoft.Azure.Documents.DocumentCollection, IDocumentCollection<HasId>>
     {
         /// <summary>
-        /// This database's parent <see cref="IDocumentDbInstance"/>.
+        /// This database's parent <see cref="IAccount"/>.
         /// </summary>
-        IDocumentDbInstance Instance { get; }
+        IAccount Account { get; }
 
         /// <summary>
         /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
@@ -262,15 +302,7 @@ namespace DocumentDb.Fluent
         /// </summary>
         /// <param name="collectionId">The Id of the <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</param>
         /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</returns>
-        IDocumentCollection<TItemUnderlying> Collection<TItemUnderlying>(string collectionId = null) where TItemUnderlying : class, IId;
-
-        /// <summary>
-        /// Gets (creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
-        /// If a <param name="collectionId"> is not provided, then the Id of the collection will be inferred by <typeparamref name="TItemUnderlying">.
-        /// </summary>
-        /// <param name="collectionId">The Id of the <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</param>
-        /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</returns>
-        Task<IDocumentCollection<TItemUnderlying>> CollectionAsync<TItemUnderlying>(string collectionId = null) where TItemUnderlying : class, IId;
+        IDocumentCollection<TItemUnderlying> Collection<TItemUnderlying>(string collectionId = null) where TItemUnderlying : class, IId, new();
     }
 
     /// <summary>
@@ -278,13 +310,9 @@ namespace DocumentDb.Fluent
     /// </summary>
     /// <typeparam name="TItemUnderlying">The underlying item type (e.g., <code>TodoItem</code>).</typeparam>
     public interface IDocumentCollection<TItemUnderlying> :
-        IEntity<IDocumentCollection<TItemUnderlying>>,
-        IAddable<IDocumentCollection<TItemUnderlying>, TItemUnderlying>,
-        IReadable<Microsoft.Azure.Documents.DocumentCollection>,
-        IDeleteable,
-        IClearable<IDocumentCollection<TItemUnderlying>>,
-        IQueryableEntity<TItemUnderlying>
-        where TItemUnderlying : class, IId
+        ICrud<IDocumentCollection<TItemUnderlying>, Microsoft.Azure.Documents.DocumentCollection>,
+        ICollectionCrud<IDocumentCollection<TItemUnderlying>, TItemUnderlying, IDocument<TItemUnderlying>>
+        where TItemUnderlying : class, IId, new()
     {
         /// <summary>
         /// This collection's parent <see cref="IDatabase"/>.
@@ -300,14 +328,6 @@ namespace DocumentDb.Fluent
         IDocument<TItemUnderlying> Document(string documentId = null);
 
         /// <summary>
-        /// Gets a <see cref="Microsoft.Azure.Documents.Document"/>.
-        /// If the <paramref name="documentId"/> is empty, then a ghost document wrapper is created.
-        /// </summary>
-        /// <param name="documentId">The Id of the <see cref="Microsoft.Azure.Documents.Document"/>.</param>
-        /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.Document"/>.</returns>
-        Task<IDocument<TItemUnderlying>> DocumentAsync(string documentId = null);
-
-        /// <summary>
         /// Gets the changes in the  collection of <see cref="IDocument{TUnderlying}"/>s since the last call.
         /// </summary>
         IEnumerable<TItemUnderlying> GetChanges();
@@ -317,7 +337,12 @@ namespace DocumentDb.Fluent
         /// </summary>
         Task<IEnumerable<TItemUnderlying>> GetChangesAsync();
 
-        IDocumentCollection<T> Cast<T>() where T : class, TItemUnderlying;
+        /// <summary>
+        /// Cast this <see cref="IDocumentCollection{TUnderlying}"/> to <see cref="IDocumentCollection{T}"/>
+        /// </summary>
+        /// <typeparam name="T">The new type.</typeparam>
+        /// <returns>The new <see cref="IDocumentCollection{T}"/></returns>
+        IDocumentCollection<T> Cast<T>() where T : class, TItemUnderlying, new();
     }
 
     /// <summary>
@@ -325,12 +350,8 @@ namespace DocumentDb.Fluent
     /// </summary>
     /// <typeparam name="TUnderlying">The underlying type (e.g., <code>TodoItem</code>).</typeparam>
     public interface IDocument<TUnderlying> :
-        IEntity<IDocument<TUnderlying>>,
-        ICreateable<IDocument<TUnderlying>, TUnderlying>,
-        IReadable<TUnderlying>,
-        IUpdateable<IDocument<TUnderlying>, TUnderlying>,
-        IDeleteable 
-        where TUnderlying : class, IId
+        ICrud<IDocument<TUnderlying>, TUnderlying>
+        where TUnderlying : class, IId, new()
     {
         /// <summary>
         /// This document's parent <see cref="IDocumentCollection{TItemUnderlying}"/>.
@@ -338,20 +359,11 @@ namespace DocumentDb.Fluent
         IDocumentCollection<TUnderlying> Collection { get; }
 
         /// <summary>
-        /// Edits this document in place and commits the change.
+        /// Cast this <see cref="IDocument{TUnderlying}"/> to <see cref="IDocument{T}"/>
         /// </summary>
-        /// <param name="mutator">A mutator action.</param>
-        /// <returns>The wrapped document.</returns>
-        IDocument<TUnderlying> Edit(Action<TUnderlying> mutator);
-
-        /// <summary>
-        /// Edits this document in place and commits the change.
-        /// </summary>
-        /// <param name="mutator">A mutator action.</param>
-        /// <returns>The wrapped document.</returns>
-        Task<IDocument<TUnderlying>> EditAsync(Action<TUnderlying> mutator);
-
-        IDocument<T> Cast<T>() where T : class, TUnderlying;
+        /// <typeparam name="T">The new type.</typeparam>
+        /// <returns>The new <see cref="IDocument{T}"/></returns>
+        IDocument<T> Cast<T>() where T : class, TUnderlying, new();
     }
 
     /// <summary>

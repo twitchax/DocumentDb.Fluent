@@ -16,9 +16,9 @@ namespace DocumentDb.Fluent.Tests
             Configuration = builder.Build();
         }
 
-        public static IDocumentDbInstance GetInstance()
+        public static IAccount GetAccount()
         {
-            return DocumentDbInstance
+            return Account
                 .Connect(Configuration["EndpointUri"], Configuration["PrimaryKey"]);
         }
     }
