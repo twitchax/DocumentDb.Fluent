@@ -298,7 +298,7 @@ namespace DocumentDb.Fluent
 
         /// <summary>
         /// Gets (or creates, if needed) a <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.
-        /// If a <param name="collectionId"> is not provided, then the Id of the collection will be inferred by <typeparamref name="TItemUnderlying">.
+        /// If a <paramref name="collectionId" /> is not provided, then the Id of the collection will be inferred by <typeparamref name="TItemUnderlying" />.
         /// </summary>
         /// <param name="collectionId">The Id of the <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</param>
         /// <returns>The wrapped <see cref="Microsoft.Azure.Documents.DocumentCollection"/>.</returns>
