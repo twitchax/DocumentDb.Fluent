@@ -7,7 +7,7 @@ DocumentDB interaction made easy.
 ### Install
 
 ```bash
-dotnet add package DoumentDb.Fluent
+dotnet add package DocumentDb.Fluent
 ```
 
 ### Upgrade from 1.X.X to 2.X.X
