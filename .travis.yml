@@ -10,4 +10,3 @@ dist: trusty
 script:
  - dotnet restore
  - dotnet build
- - dotnet test src/Tests/DocumentDb.Fluent.Tests.csproj
