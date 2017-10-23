@@ -8,5 +8,5 @@ dist: trusty
 #  - docker
 
 script:
- - dotnet restore
- - dotnet build
+ - dotnet restore src/Core/DocumentDb.Fluent.csproj
+ - dotnet build src/Core/DocumentDb.Fluent.csproj
