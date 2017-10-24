@@ -19,7 +19,7 @@ namespace DocumentDb.Fluent.Tests
         public static IAccount GetAccount()
         {
             return Account
-                .Connect(Configuration["EndpointUri"], Configuration["PrimaryKey"]);
+                .Connect(Environment.GetEnvironmentVariable("TEST_DB_ENDPOINT"), Environment.GetEnvironmentVariable("TEST_DB_KEY"));
         }
     }
 

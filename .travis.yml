@@ -8,6 +8,7 @@ script:
  - dotnet restore
  - dotnet build
  - dotnet pack -c Release --include-symbols
+ - dotnet test src/Tests/DocumentDb.Fluent.Tests.csproj
 
 after_success:
  - dotnet nuget push src/Core/bin/Release/DocumentDb.Fluent.*.nupkg -k $NUGET_KEY -s https://www.nuget.org/api/v2/package

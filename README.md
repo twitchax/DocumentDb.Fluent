@@ -16,13 +16,11 @@ dotnet add package DocumentDb.Fluent
 
 ### Testing
 
-Create an `appsettings.json` in `src/Tests` which defines your DocumentDB information.  **WARNING: all databases will be cleaned up after the test is complete.**
+Add a few environment variables for the test database.  **WARNING: all databases will be cleaned up after the test is complete.**
 
-```json
-{
-  "EndpointUri": "<endpoint>",
-  "PrimaryKey": "<key>"
-}
+```bash
+export TEST_DB_ENDPOINT="<endpoint>"
+export TEST_DB_KEY="<key>"
 ```
 
 Then run tests.
