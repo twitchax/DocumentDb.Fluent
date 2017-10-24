@@ -5,17 +5,6 @@ namespace DocumentDb.Fluent.Tests
 {
     static class Helpers
     {
-        public static IConfigurationRoot Configuration { get; set; }
-
-        static Helpers()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
-            Configuration = builder.Build();
-        }
-
         public static IAccount GetAccount()
         {
             return Account
